@@ -1,26 +1,74 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreatePessoaDto } from './dto/create-pessoa.dto';
 import { UpdatePessoaDto } from './dto/update-pessoa.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class PessoasService {
-  create(createPessoaDto: CreatePessoaDto) {
-    return 'This action adds a new pessoa';
+  constructor(private readonly prisma :  PrismaService){}
+
+
+  async create(createPessoaDto: CreatePessoaDto) {
+    try {
+      return this.prisma.pessoas.create({
+        data:{
+          nome: createPessoaDto.nome,
+          email: createPessoaDto.email,
+          telefone: createPessoaDto.telefone
+        }
+      });
+    } catch (error) {
+        throw new BadRequestException("Aconteceu algo errado");
+    }
   }
 
-  findAll() {
-    return `This action returns all pessoas`;
+  async findAll() {
+    try {
+      return this.prisma.pessoas.findMany();
+    } catch (error) {
+        throw new BadRequestException("Aconteceu algo errado");
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} pessoa`;
+  async findOne(id: number) {
+    try {
+      return this.prisma.pessoas.findUnique({
+        where: {id_pessoa:id},
+        include:{enderecos: true}
+      });
+    } catch (error) {
+        throw new BadRequestException("Aconteceu algo errado");
+    }
   }
 
-  update(id: number, updatePessoaDto: UpdatePessoaDto) {
-    return `This action updates a #${id} pessoa`;
+  async update(id: number, updatePessoaDto: UpdatePessoaDto) {
+    try{
+      return this.prisma.pessoas.update({
+        data:{
+          nome : updatePessoaDto.nome,
+          email: updatePessoaDto.email,
+          telefone: updatePessoaDto.telefone
+        },
+        where:{id_pessoa: id}
+      });
+    }catch(erro){
+      throw new BadRequestException("Usuario não encontrado!");
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} pessoa`;
+  async remove(id: number) {
+    try {
+
+      await this.prisma.enderecos.deleteMany({
+        where:{pessoas_id_pessoa : id}
+      })
+
+      return this.prisma.pessoas.delete({
+        where:{id_pessoa:id},
+        include:{enderecos:true}
+      });
+    } catch (error) {
+        throw new BadRequestException("Aconteceu algo errado");
+    }
   }
 }
